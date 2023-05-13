@@ -1,13 +1,25 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const fastify_1 = __importDefault(require("fastify"));
-const server = (0, fastify_1.default)();
-
-server.get('/ping', async (request, reply) => {
-    return 'pong\n';
+const fastify = require('fastify')({ logger: true });
+const utils_1 = require("./utils");
+const server = fastify;
+fastify.register(require('@fastify/multipart'));
+server.post('/analyse', async (req, reply) => {
+    let result;
+    const data = await req.file();
+    try {
+        const textLines = await (0, utils_1.anaysisImage)(data);
+        result = await (0, utils_1.anaysisTextLines)(textLines);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            reply.status(500).send({ error: error.message });
+        }
+        else {
+            console.log("Unexpected error", error);
+        }
+    }
+    reply.status(200).send({ result: result });
 });
 server.listen({ port: 8080 }, (err, address) => {
     if (err) {
@@ -15,4 +27,4 @@ server.listen({ port: 8080 }, (err, address) => {
         process.exit(1);
     }
     console.log(`Server listening at ${address}`);
-}
+});
